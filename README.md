@@ -69,6 +69,50 @@ MemoryPool<std::string, 256> pool3;  // 256 字节/块（适合小对象）
 
 `BlockSize` 经 `static_assert` 校验，必须 >= `2 * sizeof(Slot_)`，确保每块至少容纳一个槽。
 
+### 框架图
+```mermaid
+flowchart LR
+    SRC["MemoryPool.h<br/>#include MemoryPool.tcc"]
+    SRC --> CORE
+
+    subgraph CORE["MemoryPool &lt;T, BlockSize&gt;"]
+        direction TB
+        DATA["<b>内部数据</b><br/>currentBlock_ / currentSlot_<br/>freeSlots_ / lastSlot_"]
+        ALGO["<b>核心算法</b><br/>allocate: 空闲链表 → 当前槽 → 扩块<br/>deallocate: 插回空闲链表头部"]
+        DATA --- ALGO
+    end
+
+    CORE --> API
+
+    subgraph API["对外接口"]
+        A1["Allocator 标准接口<br/>allocate / deallocate<br/>construct / destroyed"]
+        A2["便捷方法<br/>newElement<br/>deleteElement"]
+    end
+
+    API --> U1["STL 容器<br/>vector / list / map"]
+    API --> U2["独立使用<br/>替代 new / delete"]
+
+    CORE -.-> TEST
+
+    subgraph TEST["tests/ 测试"]
+        T1["test1.cpp<br/>性能对比"]
+        T2["test2.cpp<br/>三方对比"]
+    end
+
+    style SRC fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style CORE fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    style DATA fill:#c8e6c9,stroke:#66bb6a
+    style ALGO fill:#c8e6c9,stroke:#66bb6a
+    style API fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    style A1 fill:#ffe0b2,stroke:#ff9800
+    style A2 fill:#ffe0b2,stroke:#ff9800
+    style TEST fill:#f3e5f5,stroke:#8e24aa,color:#4a148c
+    style T1 fill:#e1bee7,stroke:#ab47bc
+    style T2 fill:#e1bee7,stroke:#ab47bc
+    style U1 fill:#eceff1,stroke:#546e7a,color:#263238
+    style U2 fill:#eceff1,stroke:#546e7a,color:#263238
+```
+
 ---
 
 ## 基本使用
